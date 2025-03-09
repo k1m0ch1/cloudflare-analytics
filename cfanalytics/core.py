@@ -59,7 +59,7 @@ def main():
     dns_records = [result['name'] for result in get_dns_records(CF_ZONE_ID)]
     listofDomainFilter = [{"clientRequestHTTPHost": item} for item in dns_records]
 
-    start = "2025-02-08T00:00:00Z"
+    start = "2025-01-08T00:00:00Z"
     end = "2025-03-08T23:59:59Z"
 
     # This query only working for business plan
