@@ -15,7 +15,6 @@ CF_API_URL="https://api.cloudflare.com/client/v4"
 
 headerGraphql = {
     "Authorization": f"Bearer {CF_API_KEY}",
-    "X-AUTH-EMAIL": CF_HEADER_EMAIL,
 }
 
 def get_dns_records(zone_id):
@@ -156,6 +155,7 @@ def main():
 
     except (KeyError, IndexError, TypeError):
         print("Data is missing or invalid")
+    
 
 if __name__ == "__main__":
     main()
