@@ -1,6 +1,7 @@
 import requests
 from dotenv import load_dotenv
 import tqdm
+import sys
 import os
 
 load_dotenv()
@@ -116,11 +117,47 @@ def main():
     }
 
     getDataOK = requests.post(CF_GRAPHQL_URL, headers=headerGraphql, json=queryBody)
+    dataCompiled = {"by_date":{}, "by_domain": {}}
+    try:
+        dataMetric = getDataOK.json()["data"]["viewer"]["zones"][0]["series"]
+        for item in tqdm.tqdm(dataMetric, desc="Get Data Page & Visit"):
+            ts = item["dimensions"]["ts"]
+            domainName = item["dimensions"]["metric"]
+            if ts not in dataCompiled["by_date"]:
+                dataCompiled["by_date"][ts] = {}
+            if domainName not in dataCompiled["by_date"][ts]:
+                dataCompiled["by_date"][ts][domainName] = default
 
-    import pdb; pdb.set_trace()
+            dataCompiled["by_date"][ts][domainName]["page_views"] = item["count"]
+            dataCompiled["by_date"][ts][domainName]["requests"] = item["sum"]["visits"]
+            dataCompiled["by_date"][ts][domainName]["data_transfer_bytes"] = item["sum"]["edgeResponseBytes"]
+            
+            if domainName not in dataCompiled["by_domain"]:
+                dataCompiled["by_domain"][domainName] = {}
+            if ts not in dataCompiled["by_domain"][domainName]:
+                dataCompiled["by_domain"][domainName][ts] = default
 
+            dataCompiled["by_domain"][domainName][ts]["page_views"] = item["count"]
+            dataCompiled["by_domain"][domainName][ts]["requests"] = item["sum"]["visits"]
+            dataCompiled["by_domain"][domainName][ts]["data_transfer_bytes"] = item["sum"]["edgeResponseBytes"]
 
-    
+        queryBody["variables"]["filter"]["AND"][2]["AND"][0]["edgeResponseStatus"] = 500
+        getDataFailure = requests.post(CF_GRAPHQL_URL, headers=headerGraphql, json=queryBody)
+
+        if getDataFailure.status_code != 200:
+            print("ERROR to GET DATA FAILURE TRAFFIC")
+            sys.exit()
+
+        dataError = getDataFailure.json()["data"]["viewer"]["zones"][0]["series"]
+        for item in dataError:
+            domainName = item["dimensions"]["metric"]
+            dataCompiled["by_date"][ts][domainName]["error_count"] = item["count"]
+            dataCompiled["by_domain"][domainName][ts]["error_count"] = item["count"]
+
+    except (KeyError, IndexError, TypeError):
+        print("Data is missing or invalid")
+
+    print(dataCompiled)
 
 if __name__ == "__main__":
     main()
