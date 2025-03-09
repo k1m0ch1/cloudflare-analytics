@@ -1,4 +1,29 @@
-.venv
-__pycache__
 .env
 *.lock
+
+# Python-related
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.env/
+.venv/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Package-related
+dist/
+build/
+*.egg-info/
+
+# Poetry & Setuptools
+poetry.lock
+
+# VSCode & JetBrains IDEs
+.vscode/
+.idea/
+

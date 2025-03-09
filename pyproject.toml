@@ -1,9 +1,12 @@
 [tool.poetry]
 name = "cloudflare-analytics"
 version = "0.1.0"
-description = ""
+description = "Python Library for Cloudflare analytics web"
 authors = ["k1m0ch1 <yahya.kimochi@gmail.com>"]
+license = "AGPL v3"
 readme = "README.md"
+repository = "https://github.com/k1m0ch1/cloudflare-analytics"
+homepage = "https://yggdrasil.id/cloudflare-analytics"
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -16,3 +19,6 @@ pytest = "^8.3.5"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.plugins]
+pre_build="scripts.get_version"
