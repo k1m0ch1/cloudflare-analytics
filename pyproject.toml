@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "cloudflare-metric"
+name = "cloudflare-analytics"
 version = "0.1.0"
 description = ""
 authors = ["k1m0ch1 <yahya.kimochi@gmail.com>"]

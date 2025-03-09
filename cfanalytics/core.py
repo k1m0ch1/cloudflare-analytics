@@ -34,7 +34,13 @@ def get_dns_records(zone_id):
         return []
 
 def get_domain_plan(zone_id):
-    """Fetch the plan details for a specific domain (zone)."""
+    """
+    Get the Domain Liecense or Pricing Plan so it will give a clue about which metric
+    that we could actually scrape
+    The License most likely FREE/PRO/BUSINESS/ENTERPRISE
+    at this moment we only support FREE and BUSINESS
+    """
+
     url = f"{CF_API_URL}/zones/{zone_id}"
     response = requests.get(url, headers=headerGraphql)
     
@@ -54,15 +60,6 @@ def main():
     dns_records = [result['name'] for result in get_dns_records(CF_ZONE_ID)]
     listofDomainFilter = [{"clientRequestHTTPHost": item} for item in dns_records]
 
-    default = {
-        "requests": 0,
-        "page_views": 0,
-        "visits": 0,
-        "data_transfer_bytes": 0,
-        "failure_count": 0,
-        "error_count": 0
-    }
-
     start = "2025-02-08T00:00:00Z"
     end = "2025-03-08T23:59:59Z"
 
@@ -76,23 +73,17 @@ def main():
                         count # pageview
                         avg {
                             sampleInterval
-                            __typename
                             }
                         sum {
                             edgeResponseBytes # data transfer
                             visits # visit
-                            __typename
                             }
                         dimensions {
                             metric: clientRequestHTTPHost
                             ts: date # datetimeFifteenMinutes
-                            __typename
                             }
-                        __typename
                         }
-                    __typename
                     }
-                __typename
                 }
             }
                 """,
@@ -117,10 +108,18 @@ def main():
     }
 
     getDataOK = requests.post(CF_GRAPHQL_URL, headers=headerGraphql, json=queryBody)
+    if getDataOK.status_code != 200:
+        print(f"ERROR {getDataOK.text}")
     dataCompiled = {"by_date":{}, "by_domain": {}}
     try:
         dataMetric = getDataOK.json()["data"]["viewer"]["zones"][0]["series"]
-        for item in tqdm.tqdm(dataMetric, desc="Get Data Page & Visit"):
+        for item in dataMetric:
+            default = {
+                "page_views": 0,
+                "requests": 0,
+                "data_transfer_bytes": 0,
+                "error_count": 0
+            }            
             ts = item["dimensions"]["ts"]
             domainName = item["dimensions"]["metric"]
             if ts not in dataCompiled["by_date"]:
@@ -149,15 +148,14 @@ def main():
             sys.exit()
 
         dataError = getDataFailure.json()["data"]["viewer"]["zones"][0]["series"]
-        for item in dataError:
-            domainName = item["dimensions"]["metric"]
-            dataCompiled["by_date"][ts][domainName]["error_count"] = item["count"]
-            dataCompiled["by_domain"][domainName][ts]["error_count"] = item["count"]
+        for itemError in dataError:
+            ts = itemError["dimensions"]["ts"]
+            domainName = itemError["dimensions"]["metric"]
+            dataCompiled["by_date"][ts][domainName]["error_count"] = itemError["count"]
+            dataCompiled["by_domain"][domainName][ts]["error_count"] = itemError["count"]
 
     except (KeyError, IndexError, TypeError):
         print("Data is missing or invalid")
-
-    print(dataCompiled)
 
 if __name__ == "__main__":
     main()
