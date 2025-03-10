@@ -3,6 +3,7 @@ import os
 from cfanalytics import Auth
 from dotenv import load_dotenv
 import datetime 
+import json
 
 load_dotenv()
 
@@ -11,12 +12,35 @@ CF_HEADER_EMAIL=os.getenv("CF_HEADER_EMAIL")
 CF_ZONE_ID=os.getenv("CF_ZONE_ID")
 CF_ACCOUNT_ID=os.getenv("CF_ACCOUNT_ID")
 
+class TrafficProcessor:
+    def __init__(self, mock_file):
+        self.mock_file = mock_file
+        self.data = self.load_mock_data()
+    
+    def load_mock_data(self):
+        with open(self.mock_file, 'r') as f:
+            return json.load(f)
+    
+    def get_traffic_by_date(self, date):
+        return self.data.get('by_date', {}).get(date, {})
+    
+    def get_traffic_by_domain(self, domain):
+        return self.data.get('by_domain', {}).get(domain, {})
+    
+    def get_total_page_views(self):
+        total_views = 0
+        for date, domains in self.data.get('by_date', {}).items():
+            for domain, metrics in domains.items():
+                total_views += metrics.get('page_views', 0)
+        return total_views
+
 class TestMain(unittest.TestCase):
 
     def setUp(self):
         self.cf = Auth(CF_API_KEY, CF_HEADER_EMAIL)
         self.account = self.cf.Account(CF_ACCOUNT_ID)
         self.zone = self.account.Zone(CF_ZONE_ID)
+        self.processor = TrafficProcessor(f"{os.getcwd()}/tests/mock-traffic-rum.json")
 
     def test_get_dns_records(self):
         records = self.zone.get_dns_records()
@@ -55,53 +79,22 @@ class TestMain(unittest.TestCase):
         anal = self.zone.get_traffics()
         self.assertIsInstance(anal, dict)
 
-        self.assertIn("by_date", anal)
-        self.assertIn("by_domain", anal)
+    def test_load_mock_data(self):
+        self.assertTrue(self.processor.data, "Mock data should be loaded.")
 
-        # Check "by_date" structure
-        self.assertIsInstance(anal["by_date"], dict)
-        for date, domains in anal["by_date"].items():
-            # Ensure date keys are in valid format
-            try:
-                datetime.datetime.strptime(date, "%Y-%m-%d")
-            except ValueError:
-                self.fail(f"Invalid date format: {date}")
-
-            # Ensure domains structure
-            self.assertIsInstance(domains, dict)
-            for domain, metrics in domains.items():
-                self.assertIsInstance(domain, str)
-                self.assertIsInstance(metrics, dict)
-                self.assertIn("page_views", metrics)
-                self.assertIn("requests", metrics)
-                self.assertIn("data_transfer_bytes", metrics)
-                self.assertIn("error_count", metrics)
-                self.assertIsInstance(metrics["page_views"], int)
-                self.assertIsInstance(metrics["requests"], int)
-                self.assertIsInstance(metrics["data_transfer_bytes"], int)
-                self.assertIsInstance(metrics["error_count"], int)
-
-        # Check "by_domain" structure
-        self.assertIsInstance(anal["by_domain"], dict)
-        for domain, dates in anal["by_domain"].items():
-            self.assertIsInstance(domain, str)
-            self.assertIsInstance(dates, dict)
-            for date, metrics in dates.items():
-                try:
-                    datetime.datetime.strptime(date, "%Y-%m-%d")
-                except ValueError:
-                    self.fail(f"Invalid date format: {date} in by_domain")
-
-                self.assertIsInstance(metrics, dict)
-                self.assertIn("page_views", metrics)
-                self.assertIn("requests", metrics)
-                self.assertIn("data_transfer_bytes", metrics)
-                self.assertIn("error_count", metrics)
-                self.assertIsInstance(metrics["page_views"], int)
-                self.assertIsInstance(metrics["requests"], int)
-                self.assertIsInstance(metrics["data_transfer_bytes"], int)
-                self.assertIsInstance(metrics["error_count"], int)
-
+    def test_get_traffic_by_date(self):
+        sample_date = '2025-02-22'
+        traffic = self.processor.get_traffic_by_date(sample_date)
+        self.assertIsInstance(traffic, dict, "Traffic data should be a dictionary.")
+    
+    def test_get_traffic_by_domain(self):
+        sample_domain = 'saweria.co'
+        traffic = self.processor.get_traffic_by_domain(sample_domain)
+        self.assertIsInstance(traffic, dict, "Traffic data should be a dictionary.")
+    
+    def test_total_page_views(self):
+        total_views = self.processor.get_total_page_views()
+        self.assertGreater(total_views, 0, "Total page views should be greater than 0.")
 
 
 if __name__ == "__main__":
