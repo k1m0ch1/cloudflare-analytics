@@ -44,16 +44,17 @@ class Account:
         }
 
     def Zone(self, zone_id: str):
-        return Zone(self.api_key, self.api_key_email, zone_id)
+        return Zone(self.api_key, self.api_key_email, self.account_id, zone_id)
 
 class Zone:
 
-    def __init__(self, api_key: str, api_key_email: str, zone_id: str):
+    def __init__(self, api_key: str, api_key_email: str, account_id: str, zone_id: str):
         if not api_key or not api_key_email or not zone_id:
             raise ValueError("Cloudflare API Key, Email and Zone ID is required")
 
         self.api_key = api_key
         self.api_key_email = api_key_email
+        self.account_id=account_id
         self.zone_id = zone_id
         self.cf_graphql_url, self.cf_api_url = Config().get_url()
         self.headers = {
@@ -174,7 +175,7 @@ class Zone:
         
         dataResult = getDataOK.json()
         if dataResult["data"] == None:
-            raise ValueError("There is no data Response, maybe check the response {dataResult}")
+            raise ValueError(f"There is no data Response, maybe check the response {dataResult}")
 
         dataCompiled = {"by_date":{}, "by_domain": {}}
 
@@ -208,6 +209,15 @@ class Zone:
                 dataCompiled["by_domain"][domainName][ts]["data_transfer_bytes"] = item["sum"]["edgeResponseBytes"]
             queryBody["variables"]["filter"]["AND"][2]["AND"][0]["edgeResponseStatus"] = 500
             getDataFailure = requests.post(self.cf_graphql_url, headers=self.headers, json=queryBody)
+            
+            if getDataFailure.status_code != 200:
+                raise ConnectionError(f"Request to {getDataFailure.url} got response {getDataFailure.status_code} == {getDataFailure.text}") 
+        
+            dataResult = getDataFailure.json()
+
+            if dataResult["data"] == None:
+                raise ValueError(f"There is no data Response, maybe check the response {dataResult}")
+
 
             if getDataFailure.status_code != 200:
                 return "ERROR to GET DATA FAILURE TRAFFIC"
@@ -225,4 +235,91 @@ class Zone:
         return dataCompiled
 
 
+    def get_web_analytics(self, start_date=(datetime.now()-timedelta(seconds=2764800)).strftime("%Y-%m-%dT%H:%M:%SZ"), end_date=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")):
+        """
+        This feature is available for any price plan
+        """
+
+        try:
+            start_datetime = datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%SZ")
+        except ValueError:
+            raise ValueError("Invalid date format. Expected format: YYYY-MM-DDTHH:MM:SSZ")
+
+
+        dns_records = [result['name'] for result in self.get_dns_records()]
+        listofDomainFilter = [{"requestHost": item} for item in dns_records]
+        dataCompiled = {"by_date":{}, "by_domain": {}}
+        queryBody = {
+                "query": """
+                    query RumDaily($accountTag: string, $filter: AccountRumPageloadEventsAdaptiveGroupsFilter_InputObject){
+                        viewer{
+                            accounts(filter: {accountTag: $accountTag}) {
+                            series: rumPageloadEventsAdaptiveGroups(limit: 10000, filter: $filter) {
+                                count # number of page viewed by end users
+                                avg {
+                                    sampleInterval
+                                    }
+                                sum {
+                                    visits # according to documentation this is the number of requests by end-users that were initiated from a different website. so its requests I guess.
+                                     }
+                                dimensions {
+                                    host: requestHost
+                                    ts: date
+                                    }
+                                }
+                            }
+                        }
+                    }
+                        """,
+                "variables":{
+                    "accountTag": self.account_id,
+                    "filter": {
+                        "AND": [{
+                            "datetime_geq": start_date,
+                            "datetime_leq": end_date
+                        }, {
+                            "OR": listofDomainFilter
+                        }]
+                    }
+                }
+            }
+
+        getDataOK = requests.post(self.cf_graphql_url, headers=self.headers, json=queryBody)
+        if getDataOK.status_code != 200:
+            raise ConnectionError(f"Request to {getDataOK.url} got response {getDataOK.status_code} == {getDataOK.text}") 
         
+        dataResult = getDataOK.json()
+        if dataResult["data"] == None:
+            raise ValueError(f"There is no data Response, maybe check the response {dataResult}")
+
+        try:
+            dataMetric = getDataOK.json()["data"]["viewer"]["accounts"][0]["series"]
+            for item in dataMetric:
+                default = {
+                    "page_views": 0,
+                    "visits": 0,
+                }            
+                ts = item["dimensions"]["ts"]
+                domainName = item["dimensions"]["host"]
+                if ts not in dataCompiled["by_date"]:
+                    dataCompiled["by_date"][ts] = {}
+                if domainName not in dataCompiled["by_date"][ts]:
+                    dataCompiled["by_date"][ts][domainName] = default
+    
+                dataCompiled["by_date"][ts][domainName]["page_views"] = item["count"]
+                dataCompiled["by_date"][ts][domainName]["visits"] = item["sum"]["visits"]
+                
+                if domainName not in dataCompiled["by_domain"]:
+                    dataCompiled["by_domain"][domainName] = {}
+                if ts not in dataCompiled["by_domain"][domainName]:
+                    dataCompiled["by_domain"][domainName][ts] = default
+    
+                dataCompiled["by_domain"][domainName][ts]["page_views"] = item["count"]
+                dataCompiled["by_domain"][domainName][ts]["requests"] = item["sum"]["visits"]
+
+        except (KeyError, IndexError, TypeError):
+            return "Data is MIssing or Invalid"
+
+        return dataCompiled
+
+

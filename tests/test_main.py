@@ -39,6 +39,17 @@ class TestMain(unittest.TestCase):
 
         self.assertIn(f"start_date cannot be more than 2,764,800 seconds (32 days) ago. Given: {start_date}", str(context.exception))
         
+    def test_get_web_analytics(self):
+        anal = self.zone.get_web_analytics()
+        self.assertIsInstance(anal, dict)
+
+    def test_get_web_analytics_wrong_datetime_format(self):
+        # make sure wrong format will return error
+        with self.assertRaises(ValueError) as context:
+            self.zone.get_web_analytics("2025-1-07 17:05:52Z", "2025-03-07T17:05:52Z")
+
+        self.assertIn("Invalid date format. Expected format: YYYY-MM-DDTHH:MM:SSZ", str(context.exception))
+
 
     def test_get_traffics(self):
         anal = self.zone.get_traffics()
