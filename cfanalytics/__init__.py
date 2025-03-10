@@ -2,19 +2,62 @@ import os
 import requests
 from datetime import datetime, timedelta
 
+class Config:
+
+    def __init__(self):
+        self.cf_graphql_url="https://api.cloudflare.com/client/v4/graphql"
+        self.cf_api_url="https://api.cloudflare.com/client/v4"
+
+    def get_url(self):
+        return self.cf_graphql_url, self.cf_api_url
+
+class Auth:
+
+    def __init__(self, api_key: str, api_key_email: str):
+        if not api_key or not api_key_email:
+            raise ValueError("Cloudflare Account ID, Zone ID, API Key, API Key Email is required")
+
+        self.api_key=api_key
+        self.api_key_email=api_key_email
+        self.headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "X-AUTH-EMAIL": self.api_key_email
+        }
+
+    def Account(self, account_id: str):
+        return Account(self.api_key, self.api_key_email, account_id)
+
+
+class Account:
+
+    def __init__(self, api_key: str, api_key_email: str, account_id: str):
+        if not api_key or not api_key_email or not account_id:
+            raise ValueError("Cloudflare API Key, Email API Key and Account ID is required")
+
+        self.api_key=api_key
+        self.api_key_email=api_key
+        self.account_id=account_id
+        self.cf_graphql_url, self.cf_api_url = Config().get_url()
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "X-AUTH-EMAIL": self.api_key_email
+        }
+
+    def Zone(self, zone_id: str):
+        return Zone(self.api_key, self.api_key_email, zone_id)
+
 class Zone:
 
-    def __init__(self, cf_api_key: str, api_key_email: str, zone_id: str):
-        if not cf_api_key or not api_key_email or not zone_id:
+    def __init__(self, api_key: str, api_key_email: str, zone_id: str):
+        if not api_key or not api_key_email or not zone_id:
             raise ValueError("Cloudflare API Key, Email and Zone ID is required")
 
-        self.cf_api_key = cf_api_key
+        self.api_key = api_key
         self.api_key_email = api_key_email
         self.zone_id = zone_id
-        self.cf_graphql_url = "https://api.cloudflare.com/client/v4/graphql"
-        self.cf_api_url = "https://api.cloudflare.com/client/v4"
+        self.cf_graphql_url, self.cf_api_url = Config().get_url()
         self.headers = {
-            "Authorization": f"Bearer {self.cf_api_key}",
+            "Authorization": f"Bearer {self.api_key}",
             "X-AUTH-EMAIL": self.api_key_email
         }
 
@@ -40,6 +83,9 @@ class Zone:
         that we could actually scrape
         The License most likely FREE/PRO/BUSINESS/ENTERPRISE
         at this moment we only support FREE and BUSINESS
+        Current Response
+         1. Free Website
+         2. Business Website
         """
     
         url = f"{self.cf_api_url}/zones/{self.zone_id}"
@@ -53,11 +99,28 @@ class Zone:
             print(f"Failed to fetch plan details for zone {self.zone_id}:", response.text)
             return "Unknown"
 
-    def get_analytics(self, start_date=(datetime.now()-timedelta(seconds=2764800)).strftime("%Y-%m-%dT%H:%M:%SZ"), end_date=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")):
+    def get_traffics(self, start_date=(datetime.now()-timedelta(seconds=2764800)).strftime("%Y-%m-%dT%H:%M:%SZ"), end_date=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")):
+        """
+        This stupid feature already tested in Business Plan, its not working with Free plan
+        and still not yet tested with Pro Plan
+        """
+
+        try:
+            start_datetime = datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%SZ")
+        except ValueError:
+            raise ValueError("Invalid date format. Expected format: YYYY-MM-DDTHH:MM:SSZ")
+
+        threshold_date = datetime.utcnow() - timedelta(seconds=2764800)
+
+        if start_datetime < threshold_date:
+            raise ValueError(f"start_date cannot be more than 2,764,800 seconds (32 days) ago. Given: {start_date}")
 
         dns_records = [result['name'] for result in self.get_dns_records()]
         listofDomainFilter = []
         queryBody = {}
+
+        if "Free Website" in self.get_domain_plan():
+            raise ConnectionError(f"This Zone ID {self.zone_id} using Free Plan Pricing, Move to Business to use this feature")
 
         if "Business" in self.get_domain_plan():
             listofDomainFilter = [{"clientRequestHTTPHost": item} for item in dns_records]
@@ -74,8 +137,8 @@ class Zone:
                                     }
                                 sum {
                                     edgeResponseBytes # data transfer
-                                    visits # visit
-                                    }
+                                    visits # according to documentation this is the number of requests by end-users that were initiated from a different website. so its requests I guess.
+                                     }
                                 dimensions {
                                     metric: clientRequestHTTPHost
                                     ts: date # datetimeFifteenMinutes
@@ -107,11 +170,11 @@ class Zone:
 
         getDataOK = requests.post(self.cf_graphql_url, headers=self.headers, json=queryBody)
         if getDataOK.status_code != 200:
-            return "ERROR"
+            raise ConnectionError(f"Request to {getDataOK.url} got response {getDataOK.status_code} == {getDataOK.text}") 
         
         dataResult = getDataOK.json()
         if dataResult["data"] == None:
-            return "KOSONG"
+            raise ValueError("There is no data Response, maybe check the response {dataResult}")
 
         dataCompiled = {"by_date":{}, "by_domain": {}}
 
@@ -160,5 +223,6 @@ class Zone:
             return "Data is MIssing or Invalid"
 
         return dataCompiled
+
 
         

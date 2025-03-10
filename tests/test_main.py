@@ -1,6 +1,6 @@
 import unittest
 import os
-from cfanalytics import Zone
+from cfanalytics import Auth
 from dotenv import load_dotenv
 import datetime 
 
@@ -9,21 +9,39 @@ load_dotenv()
 CF_API_KEY=os.getenv("CF_API_KEY")
 CF_HEADER_EMAIL=os.getenv("CF_HEADER_EMAIL")
 CF_ZONE_ID=os.getenv("CF_ZONE_ID")
+CF_ACCOUNT_ID=os.getenv("CF_ACCOUNT_ID")
 
 class TestMain(unittest.TestCase):
+
     def setUp(self):
-        self.cf = Zone(CF_API_KEY, CF_HEADER_EMAIL, CF_ZONE_ID)
+        self.cf = Auth(CF_API_KEY, CF_HEADER_EMAIL)
+        self.account = self.cf.Account(CF_ACCOUNT_ID)
+        self.zone = self.account.Zone(CF_ZONE_ID)
 
     def test_get_dns_records(self):
-        records = self.cf.get_dns_records()
+        records = self.zone.get_dns_records()
         self.assertIsInstance(records, list)
 
     def test_get_domain_plan(self):
-        plan = self.cf.get_domain_plan()
+        plan = self.zone.get_domain_plan()
         self.assertIsInstance(plan, str)
 
-    def test_get_analytics(self):
-        anal = self.cf.get_analytics()
+    def test_get_traffic_wrong_datetime_format(self):
+        # make sure wrong format will return error
+        with self.assertRaises(ValueError) as context:
+            self.zone.get_traffics("2025-1-07 17:05:52Z", "2025-03-07T17:05:52Z")
+
+        self.assertIn("Invalid date format. Expected format: YYYY-MM-DDTHH:MM:SSZ", str(context.exception))
+        
+        start_date = "2025-01-07T17:05:52Z"
+        with self.assertRaises(ValueError) as context:
+            self.zone.get_traffics(start_date, "2025-03-07T17:05:52Z")
+
+        self.assertIn(f"start_date cannot be more than 2,764,800 seconds (32 days) ago. Given: {start_date}", str(context.exception))
+        
+
+    def test_get_traffics(self):
+        anal = self.zone.get_traffics()
         self.assertIsInstance(anal, dict)
 
         self.assertIn("by_date", anal)

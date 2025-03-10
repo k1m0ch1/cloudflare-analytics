@@ -20,5 +20,3 @@ pytest = "^8.3.5"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.plugins]
-pre_build="scripts.get_version"
