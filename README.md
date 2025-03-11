@@ -9,7 +9,7 @@ I just effing annoyed with the metric retention in cloudflare, and the data is a
 and to use
 
 ```
-from cfanalytics import Auth
+from cfmetrics import Auth
 
 cf = Auth(CF_API_KEY, CF_API_EMAIL)
 zone = cf.Account(CF_ACCOUNT_ID).Zone(CF_ZONE_ID)
