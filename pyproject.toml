@@ -12,6 +12,7 @@ homepage = "https://yggdrasil.id/cloudflare-analytics"
 python = "^3.10"
 requests = "^2.32.3"
 dotenv = "^0.9.9"
+setuptools = "^76.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
