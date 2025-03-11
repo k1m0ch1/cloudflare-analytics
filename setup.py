@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 import subprocess
 
-VERSION = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"]).decode().strip()
+# VERSION = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"]).decode().strip()
 
 setup(
     name="cfanalytics",
-    version=VERSION,
+    version="0.1.1",
     author="k1m0ch1",
     author_email="yahya.kimochi@gmail.com",
     description="Python Library for cloudflare analytics web",
