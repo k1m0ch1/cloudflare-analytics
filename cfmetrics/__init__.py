@@ -114,7 +114,7 @@ class Zone:
 
         threshold_date = datetime.utcnow() - timedelta(seconds=2764800)
 
-        if datetime.strptime(start_datetime,"%Y-%m-%dT%H:%M:%SZ") < threshold_date:
+        if (threshold_date - check_start_datetime).total_seconds() > 2764800:
             raise ValueError(f"start_datetime cannot be more than 2,764,800 seconds (32 days) ago. Given: {start_datetime}")
 
         dns_records = [result['name'] for result in self.get_dns_records()]
