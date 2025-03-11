@@ -101,7 +101,7 @@ class Zone:
             print(f"Failed to fetch plan details for zone {self.zone_id}:", response.text)
             return "Unknown"
 
-    def get_traffics(self, start_datetime=(datetime.now()-timedelta(seconds=2764800)).strftime("%Y-%m-%dT%H:%M:%SZ"), end_datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")):
+    def get_traffics(self, start_datetime=(datetime.now()-timedelta(seconds=2764000)).strftime("%Y-%m-%dT%H:%M:%SZ"), end_datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")):
         """
         This stupid feature already tested in Business Plan, its not working with Free plan
         and still not yet tested with Pro Plan
