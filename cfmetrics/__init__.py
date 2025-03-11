@@ -101,21 +101,21 @@ class Zone:
             print(f"Failed to fetch plan details for zone {self.zone_id}:", response.text)
             return "Unknown"
 
-    def get_traffics(self, start_date=(datetime.now()-timedelta(seconds=2764800)).strftime("%Y-%m-%dT%H:%M:%SZ"), end_date=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")):
+    def get_traffics(self, start_datetime=(datetime.now()-timedelta(seconds=2764800)).strftime("%Y-%m-%dT%H:%M:%SZ"), end_datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")):
         """
         This stupid feature already tested in Business Plan, its not working with Free plan
         and still not yet tested with Pro Plan
         """
 
         try:
-            start_datetime = datetime.strptime(start_date, "%Y-%m-%dT%H:%M:%SZ")
+            check_start_datetime = datetime.strptime(start_datetime, "%Y-%m-%dT%H:%M:%SZ")
         except ValueError:
             raise ValueError("Invalid date format. Expected format: YYYY-MM-DDTHH:MM:SSZ")
 
         threshold_date = datetime.utcnow() - timedelta(seconds=2764800)
 
-        if start_datetime < threshold_date:
-            raise ValueError(f"start_date cannot be more than 2,764,800 seconds (32 days) ago. Given: {start_date}")
+        if datetime.strptime(start_datetime,"%Y-%m-%dT%H:%M:%SZ") < threshold_date:
+            raise ValueError(f"start_datetime cannot be more than 2,764,800 seconds (32 days) ago. Given: {start_datetime}")
 
         dns_records = [result['name'] for result in self.get_dns_records()]
         listofDomainFilter = []
@@ -154,8 +154,8 @@ class Zone:
                     "zoneTag": self.zone_id,
                     "filter": {
                         "AND": [{
-                            "datetime_geq": start_date,
-                            "datetime_leq": end_date
+                            "datetime_geq": start_datetime,
+                            "datetime_leq": end_datetime
                         }, {
                             "requestSource": "eyeball"
                         }, {
