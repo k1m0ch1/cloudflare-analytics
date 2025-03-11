@@ -1,6 +1,6 @@
 import unittest
 import os
-from cfanalytics import Auth
+from cfmetrics import Auth
 from dotenv import load_dotenv
 import datetime 
 import json

@@ -1,7 +1,7 @@
 import os
 import requests
 from datetime import datetime, timedelta
-from cfanalytics import query
+from cfmetrics import query
 
 class Config:
 

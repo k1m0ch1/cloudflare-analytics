@@ -4,7 +4,7 @@ I just effing annoyed with the metric retention in cloudflare, and the data is a
 
 ## How to Install
 
-`pip install cfanalytics`
+`pip install cfmetrics`
 
 and to use
 

@@ -4,8 +4,8 @@ import subprocess
 # VERSION = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"]).decode().strip()
 
 setup(
-    name="cfanalytics",
-    version="0.1.1",
+    name="cfmetrics",
+    version="0.1.3",
     author="k1m0ch1",
     author_email="yahya.kimochi@gmail.com",
     description="Python Library for cloudflare analytics web",

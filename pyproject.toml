@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cloudflare-analytics"
-version = "0.1.1"
+version = "0.1.3"
 description = "Python Library for Cloudflare analytics web"
 authors = ["k1m0ch1 <yahya.kimochi@gmail.com>"]
 license = "AGPL v3"
@@ -15,8 +15,4 @@ dotenv = "^0.9.9"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
-
-[build-system]
-requires = ["setuptools>=.0"]
-build-backend = "setuptools.build_meta"
 
