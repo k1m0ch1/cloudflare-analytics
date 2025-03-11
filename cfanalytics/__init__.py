@@ -1,6 +1,7 @@
 import os
 import requests
 from datetime import datetime, timedelta
+from cfanalytics import query
 
 class Config:
 
@@ -141,7 +142,7 @@ class Zone:
                                     visits # according to documentation this is the number of requests by end-users that were initiated from a different website. so its requests I guess.
                                      }
                                 dimensions {
-                                    metric: clientRequestHTTPHost
+                                    host: clientRequestHTTPHost
                                     ts: date # datetimeFifteenMinutes
                                     }
                                 }
@@ -189,7 +190,7 @@ class Zone:
                     "error_count": 0
                 }            
                 ts = item["dimensions"]["ts"]
-                domainName = item["dimensions"]["metric"]
+                domainName = item["dimensions"]["host"]
                 if ts not in dataCompiled["by_date"]:
                     dataCompiled["by_date"][ts] = {}
                 if domainName not in dataCompiled["by_date"][ts]:
@@ -225,7 +226,7 @@ class Zone:
             dataError = getDataFailure.json()["data"]["viewer"]["zones"][0]["series"]
             for itemError in dataError:
                 ts = itemError["dimensions"]["ts"]
-                domainName = itemError["dimensions"]["metric"]
+                domainName = itemError["dimensions"]["host"]
                 dataCompiled["by_date"][ts][domainName]["error_count"] = itemError["count"]
                 dataCompiled["by_domain"][domainName][ts]["error_count"] = itemError["count"]
 
@@ -319,6 +320,54 @@ class Zone:
 
         except (KeyError, IndexError, TypeError):
             return "Data is MIssing or Invalid"
+
+        return dataCompiled
+
+    def get_overview(self, start_date=(datetime.now()-timedelta(seconds=2764800)).strftime("%Y-%m-%d"), end_date=datetime.now().strftime("%Y-%m-%d")):
+
+        try:
+            start_datetime = datetime.strptime(start_date, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError("Invalid date format. Expected format: YYYY-MM-DD")
+
+        queryBody = query.query_zone_overview(self.zone_id, start_date, end_date)
+        
+        getDataOK = requests.post(self.cf_graphql_url, headers=self.headers, json=queryBody)
+        if getDataOK.status_code != 200:
+            raise ConnectionError(f"Request to {getDataOK.url} got response {getDataOK.status_code} == {getDataOK.text}") 
+        
+        dataResult = getDataOK.json()
+        if dataResult["data"] == None:
+            raise ValueError(f"There is no data Response, maybe check the response {dataResult}")
+        
+        dataCompiled = {
+            "totalUniqueUsers": {},
+            "by_date": {}
+        }
+
+        try:
+            dataMetric = getDataOK.json()["data"]["viewer"]["zones"][0]
+            dataCompiled["totalUniqueUsers"] = dataMetric["totals"][0]["uniq"]["uniques"]
+            for item in dataMetric["zones"]:
+                ts = item["dimensions"]["timeslot"]
+                if ts not in dataCompiled["by_date"]:
+                    dataCompiled["by_date"][ts] = {}
+
+                dataCompiled["by_date"][ts] ={
+                    "browserMap": item["sum"]["browserMap"],
+                    "bytes": item["sum"]["bytes"],
+                    "cachedBytes": item["sum"]["cachedBytes"],
+                    "cachedRequests": item["sum"]["cachedRequests"],
+                    "contentTypeMap": item["sum"]["contentTypeMap"],
+                    "countryMap": item["sum"]["countryMap"],
+                    "pageViews": item["sum"]["pageViews"],
+                    "requests": item["sum"]["requests"],
+                    "responseStatusMap": item["sum"]["responseStatusMap"],
+                    "threatPathingMap": item["sum"]["threatPathingMap"],
+                    "threats": item["sum"]["threats"]
+                }
+        except (KeyError, IndexError, TypeError):
+            return "Data is Missing or Invalid"
 
         return dataCompiled
 

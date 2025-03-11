@@ -96,6 +96,10 @@ class TestMain(unittest.TestCase):
         total_views = self.processor.get_total_page_views()
         self.assertGreater(total_views, 0, "Total page views should be greater than 0.")
 
+    def test_get_overview(self):
+        anal = self.zone.get_overview()
+        self.assertIsInstance(anal, dict)
+
 
 if __name__ == "__main__":
     unittest.main()
