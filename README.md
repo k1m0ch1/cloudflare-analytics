@@ -6,7 +6,7 @@ I just effing annoyed with the metric retention in cloudflare, and the data is a
 
 `pip install cfmetrics`
 
-and to use
+and to use you need to have Cloudlfare API KEY with Zone and Account Read Analytics, also DNS Record Read
 
 ```
 from cfmetrics import Auth
