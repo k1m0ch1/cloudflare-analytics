@@ -5,7 +5,7 @@ import subprocess
 
 setup(
     name="cfmetrics",
-    version="0.1.4",
+    version="0.2.0",
     author="k1m0ch1",
     author_email="yahya.kimochi@gmail.com",
     description="Python Library for cloudflare analytics web",
