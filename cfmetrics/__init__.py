@@ -180,7 +180,7 @@ class Zone:
 
         dataCompiled = {"by_date":{"date_lists": [], "dates": []}, "by_domain": {"domain_lists": [], "domains": []}}
 
-        dataCompiled = data_format.traffic(getDataOK)
+        dataCompiled = data_format.model(getDataOK, "traffic")
 
 
         # somehow the value is always 0
@@ -276,34 +276,9 @@ class Zone:
         dataResult = getDataOK.json()
         if dataResult["data"] == None:
             raise ValueError(f"There is no data Response, maybe check the response {dataResult}")
+        
 
-        try:
-            dataMetric = getDataOK.json()["data"]["viewer"]["accounts"][0]["series"]
-            for item in dataMetric:
-                default = {
-                    "page_views": 0,
-                    "visits": 0,
-                }            
-                ts = item["dimensions"]["ts"]
-                domainName = item["dimensions"]["host"]
-                if ts not in dataCompiled["by_date"]:
-                    dataCompiled["by_date"][ts] = {}
-                if domainName not in dataCompiled["by_date"][ts]:
-                    dataCompiled["by_date"][ts][domainName] = default
-    
-                dataCompiled["by_date"][ts][domainName]["page_views"] = item["count"]
-                dataCompiled["by_date"][ts][domainName]["visits"] = item["sum"]["visits"]
-                
-                if domainName not in dataCompiled["by_domain"]:
-                    dataCompiled["by_domain"][domainName] = {}
-                if ts not in dataCompiled["by_domain"][domainName]:
-                    dataCompiled["by_domain"][domainName][ts] = default
-    
-                dataCompiled["by_domain"][domainName][ts]["page_views"] = item["count"]
-                dataCompiled["by_domain"][domainName][ts]["requests"] = item["sum"]["visits"]
-
-        except (KeyError, IndexError, TypeError):
-            return "Data is MIssing or Invalid"
+        dataCompiled = data_format.model(getDataOK, "rum")
 
         return dataCompiled
 

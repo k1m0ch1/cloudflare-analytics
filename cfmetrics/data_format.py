@@ -1,5 +1,5 @@
 
-def traffic(dataResult):
+def model(dataResult, dataSource):
 
     dataCompiled = {"by_date":{"date_lists": [], "dates": []}, 
                     "by_domain": {"domain_lists": [], "domains": []}}
@@ -7,15 +7,23 @@ def traffic(dataResult):
     if not hasattr(dataResult, "json"):
         raise ValueError("Expected dataResult to have a .json() method")
 
-    dataMetric = dataResult.json()["data"]["viewer"]["zones"][0]["series"]
+    dataMetric = dataResult.json()["data"]["viewer"]["zones" if dataSource == "traffic" else "accounts"][0]["series"]
     for item in dataMetric:
-
-        metricsData = {
-            "page_views": item["count"],
-            "requests": item["sum"]["visits"],
-            "data_transfer_bytes": item["sum"]["edgeResponseBytes"],
-            "error_counts": 0
-        }
+        
+        if dataSource == "traffic":
+            metricsData = {
+                "page_views": item["count"],
+                "requests": item["sum"]["visits"],
+                "data_transfer_bytes": item["sum"]["edgeResponseBytes"],
+                #"error_counts": 0
+            }
+            source = "zones"
+        elif dataSource == "rum":
+            metricsData = {
+                "page_views": item["count"],
+                "visits": item["sum"]["visits"]
+            }
+            source = "accounts"
 
         ts = item["dimensions"]["ts"]
         domainName = item["dimensions"]["host"]
