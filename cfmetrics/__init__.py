@@ -1,7 +1,7 @@
 import os
 import requests
 from datetime import datetime, timedelta
-from cfmetrics import query
+from cfmetrics import query, data_format
 
 class Config:
 
@@ -178,36 +178,17 @@ class Zone:
         if dataResult["data"] == None:
             raise ValueError(f"There is no data Response, maybe check the response {dataResult}")
 
-        dataCompiled = {"by_date":{}, "by_domain": {}}
+        dataCompiled = {"by_date":{"date_lists": [], "dates": []}, "by_domain": {"domain_lists": [], "domains": []}}
 
-        try:
-            dataMetric = getDataOK.json()["data"]["viewer"]["zones"][0]["series"]
-            for item in dataMetric:
-                default = {
-                    "page_views": 0,
-                    "requests": 0,
-                    "data_transfer_bytes": 0,
-                    "error_count": 0
-                }            
-                ts = item["dimensions"]["ts"]
-                domainName = item["dimensions"]["host"]
-                if ts not in dataCompiled["by_date"]:
-                    dataCompiled["by_date"][ts] = {}
-                if domainName not in dataCompiled["by_date"][ts]:
-                    dataCompiled["by_date"][ts][domainName] = default
-    
-                dataCompiled["by_date"][ts][domainName]["page_views"] = item["count"]
-                dataCompiled["by_date"][ts][domainName]["requests"] = item["sum"]["visits"]
-                dataCompiled["by_date"][ts][domainName]["data_transfer_bytes"] = item["sum"]["edgeResponseBytes"]
-                
-                if domainName not in dataCompiled["by_domain"]:
-                    dataCompiled["by_domain"][domainName] = {}
-                if ts not in dataCompiled["by_domain"][domainName]:
-                    dataCompiled["by_domain"][domainName][ts] = default
-    
-                dataCompiled["by_domain"][domainName][ts]["page_views"] = item["count"]
-                dataCompiled["by_domain"][domainName][ts]["requests"] = item["sum"]["visits"]
-                dataCompiled["by_domain"][domainName][ts]["data_transfer_bytes"] = item["sum"]["edgeResponseBytes"]
+        dataCompiled = data_format.traffic(getDataOK)
+
+
+        # somehow the value is always 0
+        # will debug this later, will be disabled for a moment
+
+        useFeatureError = False
+        
+        if useFeatureError:
             queryBody["variables"]["filter"]["AND"][2]["AND"][0]["edgeResponseStatus"] = 500
             getDataFailure = requests.post(self.cf_graphql_url, headers=self.headers, json=queryBody)
             
@@ -218,20 +199,23 @@ class Zone:
 
             if dataResult["data"] == None:
                 raise ValueError(f"There is no data Response, maybe check the response {dataResult}")
-
-
             if getDataFailure.status_code != 200:
                 return "ERROR to GET DATA FAILURE TRAFFIC"
 
-            dataError = getDataFailure.json()["data"]["viewer"]["zones"][0]["series"]
-            for itemError in dataError:
-                ts = itemError["dimensions"]["ts"]
-                domainName = itemError["dimensions"]["host"]
-                dataCompiled["by_date"][ts][domainName]["error_count"] = itemError["count"]
-                dataCompiled["by_domain"][domainName][ts]["error_count"] = itemError["count"]
+            dataMetric = dataResult["data"]["viewer"]["zones"][0]["series"]
+            for item in dataMetric:
+                ts = item["dimensions"]["ts"]
+                domainName = item["dimensions"]["host"]
 
-        except (KeyError, IndexError, TypeError):
-            return "Data is MIssing or Invalid"
+                if ts in dataCompiled["by_date"]["date_lists"]:
+                    currDateIndex = dataCompiled["by_date"]["date_lists"].index(ts)
+                    currDomI = dataCompiled["by_date"]["dates"][currDateIndex]["domain_lists"].index(domainName)
+                    dataCompiled["by_date"]["dates"][currDateIndex]["domains"][currDomI]["metrics"]["error_counts"] = item["count"]
+
+                if domainName in dataCompiled["by_domain"]["domain_lists"]:
+                    currDomI = dataCompiled["by_domain"]["domain_lists"].index(domainName)
+                    currDateIndex = dataCompiled["by_domain"]["domains"][currDomI]["date_lists"].index(ts)
+                    dataCompiled["by_domain"]["domains"][currDomI]["dates"][currDateIndex]["metrics"]["error_counts"] = item["count"] 
 
         return dataCompiled
 

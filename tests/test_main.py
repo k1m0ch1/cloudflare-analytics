@@ -77,7 +77,6 @@ class TestMain(unittest.TestCase):
 
         self.assertIn("Invalid date format. Expected format: YYYY-MM-DDTHH:MM:SSZ", str(context.exception))
 
-
     def test_get_traffics(self):
         anal = self.zone.get_traffics()
         self.assertIsInstance(anal, dict)
