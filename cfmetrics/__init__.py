@@ -301,7 +301,10 @@ class Zone:
         
         dataCompiled = {
             "totalUniqueUsers": {},
-            "by_date": {}
+            "by_date": {
+                "dates": [],
+                "date_lists": []
+            }
         }
 
         try:
@@ -309,22 +312,24 @@ class Zone:
             dataCompiled["totalUniqueUsers"] = dataMetric["totals"][0]["uniq"]["uniques"]
             for item in dataMetric["zones"]:
                 ts = item["dimensions"]["timeslot"]
-                if ts not in dataCompiled["by_date"]:
-                    dataCompiled["by_date"][ts] = {}
-
-                dataCompiled["by_date"][ts] ={
-                    "browserMap": item["sum"]["browserMap"],
-                    "bytes": item["sum"]["bytes"],
-                    "cachedBytes": item["sum"]["cachedBytes"],
-                    "cachedRequests": item["sum"]["cachedRequests"],
-                    "contentTypeMap": item["sum"]["contentTypeMap"],
-                    "countryMap": item["sum"]["countryMap"],
-                    "pageViews": item["sum"]["pageViews"],
-                    "requests": item["sum"]["requests"],
-                    "responseStatusMap": item["sum"]["responseStatusMap"],
-                    "threatPathingMap": item["sum"]["threatPathingMap"],
-                    "threats": item["sum"]["threats"]
-                }
+                if ts not in dataCompiled["by_date"]["date_lists"]:
+                    dataCompiled["by_date"]["dates"].append({
+                        "date": ts,
+                        "metrics": {
+                            "browserMap": item["sum"]["browserMap"],
+                            "bytes": item["sum"]["bytes"],
+                            "cachedBytes": item["sum"]["cachedBytes"],
+                            "cachedRequests": item["sum"]["cachedRequests"],
+                            "contentTypeMap": item["sum"]["contentTypeMap"],
+                            "countryMap": item["sum"]["countryMap"],
+                            "pageViews": item["sum"]["pageViews"],
+                            "requests": item["sum"]["requests"],
+                            "responseStatusMap": item["sum"]["responseStatusMap"],
+                            "threatPathingMap": item["sum"]["threatPathingMap"],
+                            "threats": item["sum"]["threats"]
+                        }
+                    })
+                    dataCompiled["by_date"]["date_lists"].append(ts)
         except (KeyError, IndexError, TypeError):
             return "Data is Missing or Invalid"
 
