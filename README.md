@@ -1,6 +1,5 @@
 # Cloudflare Analytics – Because You Need More Graphs 📊
 
-![Cloudflare Analytics](https://www.cloudflare.com/img/logo-cloudflare.svg)
 
 Ever wondered what Cloudflare *thinks* is happening on your website? This incredibly "advanced" tool helps you fetch analytics data using Cloudflare's GraphQL API—because who doesn’t love GraphQL, right? Now you can *almost* understand your website traffic, security threats, and performance (with a pinch of optimism).
 
