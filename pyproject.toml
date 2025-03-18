@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cloudflare-analytics"
-version = "0.2.0"
+version = "0.2.1"
 description = "Python Library for Cloudflare analytics web"
 authors = ["k1m0ch1 <yahya.kimochi@gmail.com>"]
 license = "AGPL v3"
