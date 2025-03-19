@@ -2,6 +2,8 @@
 
 I just hate it when cloudpler have a limitation with the data and I need to login whenever I want to see the metric, its beautifully designed with cloudflare, but I just need a simple data like requests and threat, so I plan to made this library to handle GraphQL cloudflare metric so I could store the metric for ever.
 
+I just store the data with Notion, and you could see here https://storeflare.notion.site/ or https://storeflare.notion.site/overview
+
 ## 🚀 Features 
 
 - 📊 Pulls data straight from Cloudflare's GraphQL API 
