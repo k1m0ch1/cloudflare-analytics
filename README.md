@@ -1,69 +1,73 @@
-# Cloudflare Analytics – Because You Need More Graphs 📊
+# Cloudflare Analytics 
 
+I just hate it when cloudpler have a limitation with the data and I need to login whenever I want to see the metric, its beautifully designed with cloudflare, but I just need a simple data like requests and threat, so I plan to made this library to handle GraphQL cloudflare metric so I could store the metric for ever.
 
-Ever wondered what Cloudflare *thinks* is happening on your website? This incredibly "advanced" tool helps you fetch analytics data using Cloudflare's GraphQL API—because who doesn’t love GraphQL, right? Now you can *almost* understand your website traffic, security threats, and performance (with a pinch of optimism).
+## 🚀 Features 
 
-## 🚀 Features (Because Everything Needs Bullet Points)
-
-- 📊 Pulls data straight from Cloudflare's GraphQL API (yes, GraphQL, because REST is *so* last decade)
-- 🔍 Gives you traffic insights, but *only* if Cloudflare decides to cooperate
-- 📈 Shows security metrics—so you can see all those "bad" IPs doing "bad" things
+- 📊 Pulls data straight from Cloudflare's GraphQL API 
+- 🔍 Gives you traffic insights, some of the data depend with pricing plan 
+- 📈 Shows threats metrics
 - ⚡ Lightweight, just like your trust in Cloudflare’s analytics
 
-## 📦 Installation (Because Nothing is Easy)
+## 📦 Installation 
 
 Clone this glorified data-fetcher and install some dependencies:
 
 ```sh
-# Clone the magical repo
-git clone https://github.com/k1m0ch1/cloudflare-analytics.git
-cd cloudflare-analytics
-
-# Install the spell components
-pip install -r requirements.txt
+pip install cfmetrics
 ```
 
-## 🔧 Configuration (Enter Your API Token… If You Dare)
+## 🔧 Configuration 
 
-Create a `.env` file and provide your *oh-so-secure* Cloudflare API token:
+you need the Cloudflare API Key and Registerd Email for API Key, the permission needs to create is:
 
-```sh
-CLOUDFLARE_API_TOKEN=your_api_token_here
-```
+1. Zone Read Analytics
 
-If your token gets leaked, don’t worry—Cloudflare probably already knew about it.
+2. Zone Read DNS 
 
-## 🚀 Usage (Let’s See What Cloudflare *Wants* You to See)
+3. Account Read Analytics
 
-Run this beauty and behold the data:
-
-```sh
-python analytics.py
-```
-
-Example output (or an error message, who knows?):
+## 🚀 Usage Cloudflare 
 
 ```
-Fetching Cloudflare analytics data...
-Total Requests: 120,345 (or whatever Cloudflare decides)
-Unique Visitors: 54,678 (probably bots)
-Threats Blocked: 1,234 (but not that one shady IP)
-...
+from cfmetrics import Auth
+
+cf= Auth(CF_APIKEY, CF_EMAIL)
+zone = cf.Account(CF_ACCOUNTID).Zone(CF_ZONEID)
+
+# and here is the available function
+
+# get all A and CNAME Record
+getDNSRecord = zone.get_dns_records()
+
+# get Data Overview
+getDataOverview = zone.get_overview()
+
+# Domain plan
+getDomainPlan = zone.get_domain_plan()
+
+# Web Analytics
+getWebAnalytics = zone.get_web_analytics()
+
+# HTTP traffic
+# This only available for Business plan
+getHttpTraffics = zone.get_traffics()
+
 ```
 
-## 🛠 API Reference (A.k.a. "Read the Docs")
+## 🛠 API Reference 
 
 This tool "leverages" Cloudflare’s GraphQL API, which you can tweak in `analytics.py`. Or just pretend you understand GraphQL by checking out [Cloudflare’s GraphQL API Docs](https://developers.cloudflare.com/graphql/).
 
-## 📜 License (Because Lawyers Demand It)
+## 📜 License 
 
-This project is licensed under the MIT License—so do whatever you want with it. Just don’t blame us if Cloudflare changes everything overnight.
+This project is licensed under the MIT License—so do whatever you want with it. 
 
-## 🤝 Contributing (No, Really, Please Help)
+## 🤝 Contributing
 
 Want to make this better? Great! Open an issue, submit a pull request, or just scream into the void.
 
-## 📬 Contact (If Cloudflare Didn’t Block Me Yet)
+## 📬 Contact 
 
 Got questions, complaints, or just need someone to blame? Reach out to [@k1m0ch1](https://github.com/k1m0ch1) or open an issue. 
 
